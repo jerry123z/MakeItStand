@@ -51,4 +51,10 @@ public class CenterOfGravity : MonoBehaviour
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.centerOfMass = centerOfMass;
     }
+
+    void FixedUpdate() {
+        Rigidbody rb = GetComponent<Rigidbody>();
+        Vector3 force = new Vector3(0, -9.8f, 0);
+        rb.AddForce(force);
+    }
 }
