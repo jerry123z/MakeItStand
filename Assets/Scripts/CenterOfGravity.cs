@@ -9,6 +9,13 @@ public class CenterOfGravity : MonoBehaviour
     {
         MeshFilter meshFilter = GetComponent<MeshFilter>();
         Mesh mesh = meshFilter.mesh;
+        //float quality = 0.5f;
+        //var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
+        //meshSimplifier.Initialize(mesh);
+        //meshSimplifier.SimplifyMesh(quality);
+        //mesh = meshSimplifier.ToMesh();
+        //meshFilter.mesh = mesh;
+
         Vector3 centerOfMass = new Vector3(0, 0, 0);
         float volumeTotal = 0f;
         for(int face = 0; face < mesh.triangles.Length; face += 3)
