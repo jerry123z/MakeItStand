@@ -7,6 +7,48 @@ public class C : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //CoM();
+        int _xDensity = 8;
+        int _yDensity = 16;
+        int _zDensity = 16;
+
+        Bounds _bounds = new Bounds(new Vector3(0, 1f, -1f), new Vector3(2, 4, 4));
+        Voxeliser _voxeliser = new Voxeliser(_bounds, _xDensity, _yDensity, _zDensity);
+        _voxeliser.Voxelize(GetComponent<Transform>().parent);
+
+        
+        //This will return a 3D bool array that contains the voxel data. solid == true empty == false
+        GameObject _voxelModel = GameObject.Find("Cube");
+        
+        var gridCubeSize = new Vector3(
+            _bounds.size.x / _xDensity,
+            _bounds.size.y / _yDensity,
+            _bounds.size.z / _zDensity);
+        var voxelRoot = new GameObject("Voxel Root");
+        var rootTransform = voxelRoot.transform;
+        var worldCentre = _bounds.min + gridCubeSize / 2;
+        for (int x = 0; x < _xDensity; x++)
+        {
+            for (int y = 0; y < _yDensity; y++)
+            {
+                for (int z = 0; z < _zDensity; z++)
+                {
+                    if (_voxeliser.VoxelMap[x][y][z])
+                    {
+                        var go = Instantiate(_voxelModel, new Vector3(
+                            x * gridCubeSize.x,
+                            y * gridCubeSize.y,
+                            z * gridCubeSize.z) + worldCentre, Quaternion.identity) as GameObject;
+                        go.transform.localScale = gridCubeSize;
+                        go.transform.SetParent(rootTransform, true);
+                    }
+                }
+            }
+        }
+    }
+
+    void CoM()
+    {
         MeshFilter meshFilter = GetComponent<MeshFilter>();
         Mesh mesh = meshFilter.mesh;
         //float quality = 0.1f;
@@ -32,10 +74,10 @@ public class C : MonoBehaviour
             Vector3 g;
 
             g = Vector3.Scale(a, a) + Vector3.Scale(a, b) + Vector3.Scale(b, b) + Vector3.Scale(b, c) + Vector3.Scale(c, c) + Vector3.Scale(c, a);
-            
+
             //the Centeroid of a tetrahedron is the average of its 4 points,
             //We assume the origin is at 0
-            float mass = Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c)) / 6.0f;
+            float mass = Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c)) / 18.0f;
             centerOfMass += Vector3.Scale(Vector3.Cross(b - a, c - a), g) / 24.0f;
             massTotal += mass;
         }
@@ -48,12 +90,5 @@ public class C : MonoBehaviour
         //SphereCollider sc = gameObject.AddComponent<SphereCollider>();
         //sc.radius = 0.5f;
         //sc.center = centerOfMass;
-    }
-
-    void FixedUpdate()
-    {
-        Rigidbody rb = GetComponent<Rigidbody>();
-        Vector3 force = new Vector3(0, -9.8f, 0);
-        rb.AddForce(force);
     }
 }

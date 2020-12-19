@@ -11,6 +11,7 @@ using Triangle = TriAABBOverlap.Triangle;
 
 public class Voxeliser 
 {
+
 	private bool[][][] _voxelMap;
 	private int _xDensity = 8;
 	private int _yDensity = 8;
@@ -20,6 +21,14 @@ public class Voxeliser
 	public bool[][][] VoxelMap
 	{
 		get { return _voxelMap; }
+	}
+
+	enum Status
+	{
+		outside = 0,
+		entering = 1,
+		inside = 2,
+		exiting = 4,
 	}
 
 	public Voxeliser (Bounds bounds, int xDensity, int yDensity, int zDensity)
@@ -162,7 +171,73 @@ public class Voxeliser
 				}
 			}
 		}
-		
+		var data = _voxelMap;
+		bool[][][] inner = new bool[_xDensity][][];
+		for (int x = 0; x < _xDensity; x++)
+		{
+			inner[x] = new bool[_yDensity][];
+			for (int y = 0; y < _yDensity; y++)
+			{
+				inner[x][y] = new bool[_zDensity];
+				for (int z = 0; z < _zDensity; z++)
+				{
+					inner[x][y][z] = false;
+				}
+			}
+		}
+		for (int x = 0; x < _xDensity; x++)
+		{
+			for (int y = 0; y < _yDensity; y++)
+			{
+				Status status = Status.outside;
+				int last_block = 0;
+				for (int z = _zDensity - 1; z >= 0; z--)
+				{
+					last_block = 0;
+					if (_voxelMap[x][y][z])
+					{
+						last_block = z;
+						break;
+					}
+				}
+				for (int z = 0; z < _zDensity; z++)
+				{
+					if (z == last_block)
+					{
+						break;
+					}
+					if (status == Status.inside)
+					{
+						inner[x][y][z] = true;
+					}
+
+					if (_voxelMap[x][y][z])
+					{
+						if (status == Status.outside)
+						{
+							status = Status.entering;
+						}
+						if (status == Status.inside)
+						{
+							inner[x][y][z] = false;
+							status = Status.exiting;
+						}
+					}
+					else
+					{
+						if (status == Status.entering)
+						{
+							status = Status.inside;
+						}
+						if (status == Status.exiting)
+						{
+							status = Status.outside;
+						}
+					}
+				}
+			}
+		}
+		_voxelMap = inner;
 		#if UNITY_EDITOR
 		EditorUtility.ClearProgressBar();
 		#endif
