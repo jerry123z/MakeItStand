@@ -6,11 +6,15 @@ public class C : MonoBehaviour
 {
     public Material material;
     public GameObject plane;
+    public float mass;
     // Start is called before the first frame update
     void Start()
     {
-        // CoM(GetComponent<meshFilter>());
+        Vector4 temp = CoM(GetComponent<MeshFilter>().mesh);
+        Vector3 c = new Vector3(temp[0], temp[1], temp[2]);
+        mass = temp[3];
         Rigidbody rb = GetComponent<Rigidbody>();
+        rb.centerOfMass = c;
         // hard coding so i don't have to run CoM every time
         rb.centerOfMass = new Vector3(0, 1, -1);
 
@@ -125,16 +129,25 @@ public class C : MonoBehaviour
             // Voxel_Root.GetComponent<MeshCollider>().convex = true;
             // Voxel_Root.AddComponent<Rigidbody>();
             // Voxel_Root.GetComponent<Rigidbody>().useGravity = true;
+            Vector4 temp = getComOfChildren();
+            Vector3 Voxels_c = new Vector3(temp[0], temp[1], temp[2]);
+            float Voxels_mass = temp[3];
+
+            Rigidbody rb = GetComponent<Rigidbody>();
+            Vector3 c = rb.centerOfMass;
+
+            rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
+
         }
     }
 
-    void combineMeshes()
+    Vector4 getComOfChildren()
     {
-        GameObject Voxel_Root = GameObject.Find("Voxel Root");
+        // GameObject Voxel_Root = GameObject.Find("Voxel Root");
 
-        transform.parent = Voxel_Root.transform;
+        // // transform.parent = Voxel_Root.transform;
 
-        MeshFilter[] meshFilters = Voxel_Root.GetComponentsInChildren<MeshFilter>();
+        MeshFilter[] meshFilters = gameObject.GetComponentsInChildren<MeshFilter>();
         CombineInstance[] combine = new CombineInstance[meshFilters.Length];
 
         int i = 0;
@@ -149,22 +162,29 @@ public class C : MonoBehaviour
 
             i++;
         }
-        Voxel_Root.AddComponent<MeshFilter>();
-        Voxel_Root.GetComponent<MeshFilter>().mesh = new Mesh();
-        Voxel_Root.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
-        Voxel_Root.AddComponent<MeshRenderer>();
-        Renderer rend = Voxel_Root.GetComponent<Renderer>();
+
+        Mesh m = new Mesh();
+
+        m.CombineMeshes(combine);
+
+        Vector4 Voxels_c = CoM(m);
+        return Voxels_c;
+        // Voxel_Root.AddComponent<MeshFilter>();
+        // Voxel_Root.GetComponent<MeshFilter>().mesh = new Mesh();
+        // Voxel_Root.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
+        // Voxel_Root.AddComponent<MeshRenderer>();
+        // Renderer rend = Voxel_Root.GetComponent<Renderer>();
         //rend.material = new Material(Shader.Find("Specular"));
-        rend.material = material;
+        // rend.material = material;
         //Voxel_Root.gameObject.SetActive(true);
 
         //Voxel_Root.transform.parent = transform;
     }
 
-    void CoM(MeshFilter meshFilter)
+    Vector3 CoM(Mesh mesh)
     {
         // MeshFilter meshFilter = GetComponent<MeshFilter>();
-        Mesh mesh = meshFilter.mesh;
+        // Mesh mesh = meshFilter.mesh;
         //float quality = 0.1f;
         //var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
         //meshSimplifier.Initialize(mesh);
@@ -199,11 +219,12 @@ public class C : MonoBehaviour
         centerOfMass /= massTotal;
         // print(massTotal);
         // print(centerOfMass);
-        Rigidbody rb = GetComponent<Rigidbody>();
-        rb.centerOfMass = centerOfMass;
+        // Rigidbody rb = GetComponent<Rigidbody>();
+        // rb.centerOfMass = centerOfMass;
         //SphereCollider sc = gameObject.AddComponent<SphereCollider>();
         //sc.radius = 0.5f;
         //sc.center = centerOfMass;
+        return new Vector4(centerOfMass.x, centerOfMass.y, centerOfMass.z, massTotal);
     }
     List<GameObject> sorted(Vector3 c0, float ground_height){
         // Vector3 c_star = new Vector3(0, 0, 0);
