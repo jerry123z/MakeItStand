@@ -9,7 +9,7 @@ public class C : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // CoM();
+        // CoM(GetComponent<meshFilter>());
         Rigidbody rb = GetComponent<Rigidbody>();
         // hard coding so i don't have to run CoM every time
         rb.centerOfMass = new Vector3(0, 1, -1);
@@ -32,8 +32,9 @@ public class C : MonoBehaviour
             _bounds.size.x / _xDensity,
             _bounds.size.y / _yDensity,
             _bounds.size.z / _zDensity);
-        var voxelRoot = new GameObject("Voxel Root");
-        var rootTransform = voxelRoot.transform;
+        // var voxelRoot = new GameObject("Voxel Root");
+        // var rootTransform = voxelRoot.transform;
+        var rootTransform = transform;
         var worldCentre = _bounds.min + gridCubeSize / 2;
         for (int x = 0; x < _xDensity; x++)
         {
@@ -96,15 +97,15 @@ public class C : MonoBehaviour
         // we need a button for this
         if (Input.GetMouseButtonDown(0))
         {
-            Rigidbody rb = GetComponent<Rigidbody>();
-            GameObject Voxel_Root = GameObject.Find("Voxel Root");
-            Transform transform = Voxel_Root.GetComponent<Transform>();
+            // Rigidbody rb = GetComponent<Rigidbody>();
+            // GameObject Voxel_Root = GameObject.Find("Voxel Root");
+            // Transform transform = Voxel_Root.GetComponent<Transform>();
 
-            // need 2 for loops and a to_be_deleted list because if you delete while iterating it skips items;
+            // // need 2 for loops and a to_be_deleted list because if you delete while iterating it skips items;
             List<Transform> to_be_deleted = new List<Transform>();
-            foreach (Transform child in Voxel_Root.transform)
+            foreach (Transform child in transform)
             {
-                if (child.gameObject.GetComponent<d>().dist > 0)
+                if (child.gameObject.GetComponent<d>().dist < 0)
                 {
                     to_be_deleted.Add(child);
                     //child.parent = null;
@@ -113,11 +114,17 @@ public class C : MonoBehaviour
             }
             foreach(Transform child in to_be_deleted)
             {
-                child.parent = null;
-                child.gameObject.SetActive(false);
+                Destroy(child.gameObject);
+                // child.parent = null;
+                // child.gameObject.SetActive(false);
             }
 
-            combineMeshes();
+            // transform.parent = Voxel_Root.transform;
+            // combineMeshes();
+            // Voxel_Root.AddComponent<MeshCollider>();
+            // Voxel_Root.GetComponent<MeshCollider>().convex = true;
+            // Voxel_Root.AddComponent<Rigidbody>();
+            // Voxel_Root.GetComponent<Rigidbody>().useGravity = true;
         }
     }
 
@@ -154,9 +161,9 @@ public class C : MonoBehaviour
         //Voxel_Root.transform.parent = transform;
     }
 
-    void CoM()
+    void CoM(MeshFilter meshFilter)
     {
-        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        // MeshFilter meshFilter = GetComponent<MeshFilter>();
         Mesh mesh = meshFilter.mesh;
         //float quality = 0.1f;
         //var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
@@ -203,8 +210,8 @@ public class C : MonoBehaviour
         Vector3 c_star = find_base(GetComponent<MeshFilter>().mesh, ground_height);
         print(c_star);
 
-        GameObject Voxel_Root = GameObject.Find("Voxel Root");
-        Transform transform = Voxel_Root.GetComponent<Transform>();
+        // GameObject Voxel_Root = GameObject.Find("Voxel Root");
+        // Transform transform = Voxel_Root.GetComponent<Transform>();
         
         double voxel_size = 1;
 
@@ -213,7 +220,7 @@ public class C : MonoBehaviour
 
         List<GameObject> voxel_list = new List<GameObject>();
 
-        foreach (Transform child in Voxel_Root.transform) {
+        foreach (Transform child in transform) {
             
             // depends whether origin of object is at center or at corner
             // Vector3 centroid = child.position + voxel_size * new Vector3(1, 1, 1);
@@ -261,8 +268,8 @@ public class C : MonoBehaviour
         }
         m.vertices = vertices;
         center /= k;
-        GameObject test = GameObject.Instantiate(GameObject.Find("Sphere"));
-        test.transform.position = center;
+        // GameObject test = GameObject.Instantiate(GameObject.Find("Sphere"));
+        // test.transform.position = center;
         // print(center);
         return center;
     }
