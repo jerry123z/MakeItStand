@@ -428,6 +428,10 @@ public class C : MonoBehaviour
         GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         GetComponent<MeshCollider>().sharedMesh = mesh;
 
+    }
+
+    public void Perturb(){
+        Mesh mesh  = GetComponent<MeshFilter>().mesh;
         float min_height = 100;
         Vector3 lowest = new Vector3();
         for (int i = 0; i < mesh.vertices.Length; i++)
@@ -440,8 +444,16 @@ public class C : MonoBehaviour
             }
         }
 
-        // plane.transform.position = lowest + (-0.5f) * Vector3.up;
+        plane.transform.position = lowest + (-0.5f) * Vector3.up;
+
+        GetComponent<Rigidbody>().useGravity = true;
+
+        float eps = 1;
+
+        GetComponent<Rigidbody>().velocity = eps * (new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1)));
+
     }
+
     void OnDrawGizmosSelected() {
         Gizmos.color = Color.black;
         // Gizmos.DrawWireCube(GetComponent<Renderer>().bounds.center, GetComponent<Renderer>().bounds.size);
