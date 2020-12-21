@@ -74,7 +74,7 @@ public class C : MonoBehaviour
         // rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
         // rb.centerOfMass = Vector3.zero;
         // rb.centerOfMass = new Vector3(0.3f, -0.6f, -0.1f);
-        rb.centerOfMass = transform.TransformPoint(lowest_vertice + 0.25f * (new Vector3(-1, 1, -1)));
+        rb.centerOfMass = lowest_vertice + 0.25f * (new Vector3(-1, 1, -1));
         print(rb.centerOfMass);
 
     }
@@ -90,7 +90,7 @@ public class C : MonoBehaviour
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.centerOfMass = c0;
 
-        int _xDensity = 8;
+        int _xDensity = 16;
         int _yDensity = 16;
         int _zDensity = 16;
         // int _xDensity = 32;
@@ -158,7 +158,20 @@ public class C : MonoBehaviour
         }
 
 
-        var base_stand = Instantiate(_voxelModel, transform.TransformPoint(lowest_vertice), Quaternion.identity) as GameObject;
+        Mesh mesh = GetComponent<MeshFilter>().mesh;
+        float min_height = transform.TransformPoint(mesh.vertices[0]).y;
+
+        for (int i = 0; i < mesh.vertices.Length; i++)
+        {
+            Vector3 v = transform.TransformPoint(mesh.vertices[i]);
+            if (v.y < min_height)
+            {
+                min_height = v.y;
+                lowest_vertice = v;
+            }
+        }
+
+        var base_stand = Instantiate(_voxelModel, lowest_vertice, Quaternion.identity) as GameObject;
         base_stand.transform.localScale = new Vector3(1, 0.01f, 1);
         base_stand.transform.SetParent(rootTransform, true);
         Renderer rend = GetComponent<Renderer>();
@@ -303,10 +316,10 @@ public class C : MonoBehaviour
            
         reset();
 
-        float min_height = mesh.vertices[0].y;
+        float min_height = transform.TransformPoint(mesh.vertices[0]).y;
         for (int i = 0; i < mesh.vertices.Length; i++)
         {
-            Vector3 v = mesh.vertices[i];
+            Vector3 v = transform.TransformPoint(mesh.vertices[i]);
             if (v.y < min_height)
             {
                 min_height = v.y;
@@ -315,7 +328,7 @@ public class C : MonoBehaviour
         }
         // plane.transform.position = lowest_vertice + (-1f) * Vector3.up;
         // transform.position = plane.transform.position + transform.TransformPoint(lowest_vertice) + (1f) * Vector3.up;
-        transform.position = plane.transform.position - transform.TransformPoint(lowest_vertice) + 1 * Vector3.up;
+        transform.position = plane.transform.position - lowest_vertice + 1 * Vector3.up;
         GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 
