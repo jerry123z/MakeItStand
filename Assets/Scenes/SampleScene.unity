@@ -883,7 +883,9 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Spheres-Flattened
       m_Image: {fileID: 0}
-    - m_Text: Toy Horse
+    - m_Text: Horse
+      m_Image: {fileID: 0}
+    - m_Text: Armadillo
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1965,13 +1967,15 @@ MonoBehaviour:
   meshes:
   - {fileID: -2432090755550338912, guid: 77bdb9fd1db6d5c4a9bede5779f81554, type: 3}
   - {fileID: 5864596642244391829, guid: 09d771699ee8c4b408dd84a2cf7a5d7d, type: 3}
-  - {fileID: -2432090755550338912, guid: 4c3695b656807704cab79d174ba57230, type: 3}
+  - {fileID: -2432090755550338912, guid: b1369e9b0318b554898dbe177342af86, type: 3}
+  - {fileID: -2432090755550338912, guid: 5b27bb217a6fbb745b9ecd90bbc88f35, type: 3}
   material: {fileID: 2100000, guid: fdc46708bc4aec341a77da9843b1eeb2, type: 2}
   solid_material: {fileID: 2100000, guid: 55662a0c80dc5ec47864ffdd7428e162, type: 2}
   plane: {fileID: 1861435058}
   mass: 0
   voxel_c: {x: 0, y: 0, z: 0}
   starting: {x: 0, y: 0, z: 0}
+  lowest_vertice: {x: 0, y: 0, z: 0}
 --- !u!54 &1329741621
 Rigidbody:
   m_ObjectHideFlags: 0
