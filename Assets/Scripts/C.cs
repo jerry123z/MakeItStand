@@ -20,6 +20,8 @@ public class C : MonoBehaviour
 
     public Vector3 starting;
 
+    public Vector3 lowest_vertice;
+
     void Start()
     {
         scalings = new Dictionary<int, float>();
@@ -35,7 +37,6 @@ public class C : MonoBehaviour
         // scalings.Add(1, 5.0f);
         // scalings.Add(2, 1.0f);
 
-        starting = transform.position;
     }
 
     public void Drop(){
@@ -351,18 +352,18 @@ public class C : MonoBehaviour
         int k = 0;
         Vector3[] vertices = m.vertices;
 
-        // first get lowest vertex in mesh
-        float min_height = 100;
-        Vector3 lowest = new Vector3();
-        for (int i = 0; i < m.vertices.Length; i++)
-        {
-            Vector3 v = m.vertices[i];
-            if (v.y < min_height)
-            {
-                min_height = v.y;
-                lowest = v;
-            }
-        }
+        // // first get lowest vertex in mesh
+        // float min_height = 100;
+        // Vector3 lowest = new Vector3();
+        // for (int i = 0; i < m.vertices.Length; i++)
+        // {
+        //     Vector3 v = m.vertices[i];
+        //     if (v.y < min_height)
+        //     {
+        //         min_height = v.y;
+        //         lowest = v;
+        //     }
+        // }
 
         // get the average vertices with y value with delta range
         float delta = 1;
@@ -371,7 +372,7 @@ public class C : MonoBehaviour
             //print(m.vertices[i]);
             Vector3 v = transform.TransformPoint(m.vertices[i]);
             // print(v);
-            if (v.y - min_height < delta) {
+            if (v.y - lowest_vertice.y < delta) {
                 center += v;
                 k += 1;
             }
@@ -416,6 +417,23 @@ public class C : MonoBehaviour
             Destroy(child.gameObject);
         }
            
+        reset();
+
+        float min_height = mesh.vertices[0].y;
+        for (int i = 0; i < mesh.vertices.Length; i++)
+        {
+            Vector3 v = mesh.vertices[i];
+            if (v.y < min_height)
+            {
+                min_height = v.y;
+                lowest_vertice = v;
+            }
+        }
+        GetComponent<MeshCollider>().sharedMesh = mesh;
+    }
+
+    void reset(){
+        int index = GameObject.Find("Dropdown").GetComponent<Dropdown>().value;
         transform.position = starting;
 
         if (rotations.ContainsKey(index)){
@@ -426,25 +444,12 @@ public class C : MonoBehaviour
         GetComponent<Rigidbody>().useGravity = false;
         GetComponent<Rigidbody>().velocity = Vector3.zero;
         GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-        GetComponent<MeshCollider>().sharedMesh = mesh;
-
     }
 
     public void Perturb(){
-        Mesh mesh  = GetComponent<MeshFilter>().mesh;
-        float min_height = 100;
-        Vector3 lowest = new Vector3();
-        for (int i = 0; i < mesh.vertices.Length; i++)
-        {
-            Vector3 v = mesh.vertices[i];
-            if (v.y < min_height)
-            {
-                min_height = v.y;
-                lowest = v;
-            }
-        }
-
-        plane.transform.position = lowest + (-0.5f) * Vector3.up;
+        reset();
+        plane.transform.position = lowest_vertice + (-0.5f) * Vector3.up;
+        // plane.transform.position = lowest_vertice + (-0.1f) * Vector3.up;
 
         GetComponent<Rigidbody>().useGravity = true;
 
