@@ -1,33 +1,112 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class C : MonoBehaviour
 {
+    public Mesh[] meshes;
     public Material material;
+    public Material solid_material;
     public GameObject plane;
     public float mass;
+
+    public Vector3 voxel_c;
+    // mesh import scalings (couldnt figure out how to access so hardcoding in start)
+    Dictionary<int, float> scalings;
+    Dictionary<int, Vector3> rotations;
+
     // Start is called before the first frame update
+
+    public Vector3 starting;
+
     void Start()
     {
+        scalings = new Dictionary<int, float>();
+        scalings.Add(0, 1.0f);
+        scalings.Add(1, 5.0f);
+        scalings.Add(2, 1.0f);
+
+        starting = transform.position;
+
+        rotations = new Dictionary<int, Vector3>();
+        // rotations.Add(1, new Vector3(-16, 0, -27));
+        // scalings.Add(0, 1.0f);
+        // scalings.Add(1, 5.0f);
+        // scalings.Add(2, 1.0f);
+
+        starting = transform.position;
+    }
+
+    public void Drop(){
+        GetComponent<Rigidbody>().useGravity = true;
+    }
+
+    public void Balance(){
+        // need 2 for loops and a to_be_deleted list because if you delete while iterating it skips items;
+        
+        List<Transform> to_be_deleted = new List<Transform>();
+        foreach (Transform child in transform)
+        {
+            if (child.gameObject.GetComponent<d>().dist < 0)
+            {
+                to_be_deleted.Add(child);
+            }
+        }
+
+        foreach(Transform child in to_be_deleted)
+        {
+            child.parent = null;
+            Destroy(child.gameObject);
+        }
+
+        Vector4 temp = getComOfChildren();
+        // print(CoM(GetComponent<MeshFilter>().mesh));
+        print(temp);
+        Vector3 Voxels_c = new Vector3(temp[0], temp[1], temp[2]);
+        float Voxels_mass = temp[3];
+
+        voxel_c = Voxels_c;
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        Vector3 c = rb.centerOfMass;
+        
+        print(rb.centerOfMass);
+        print(mass);
+
+        rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
+        // rb.centerOfMass = Vector3.zero;
+
+        print(rb.centerOfMass);
+
+    }
+
+
+    public void Carve(){
+        // sets material to transparent and shows voxels inside
+        // add alpha value later?
+
         Vector4 temp = CoM(GetComponent<MeshFilter>().mesh);
-        Vector3 c = new Vector3(temp[0], temp[1], temp[2]);
+        Vector3 c0 = new Vector3(temp[0], temp[1], temp[2]);
         mass = temp[3];
         Rigidbody rb = GetComponent<Rigidbody>();
-        rb.centerOfMass = c;
+        rb.centerOfMass = c0;
         // hard coding so i don't have to run CoM every time
         // rb.centerOfMass = new Vector3(0, 1, -1);
 
         int _xDensity = 8;
         int _yDensity = 16;
         int _zDensity = 16;
+        // int _xDensity = 32;
+        // int _yDensity = 32;
+        // int _zDensity = 32;
         // int _yDensity = 8;
         // int _zDensity = 8;
 
-        Bounds _bounds = new Bounds(new Vector3(0, 1f, -1f), new Vector3(2, 4, 4));
+        Bounds _bounds = GetComponent<MeshFilter>().mesh.bounds;
+
         Voxeliser _voxeliser = new Voxeliser(_bounds, _xDensity, _yDensity, _zDensity);
         _voxeliser.Voxelize(GetComponent<Transform>().parent);
-
         
         //This will return a 3D bool array that contains the voxel data. solid == true empty == false
         GameObject _voxelModel = GameObject.Find("Cube");
@@ -36,10 +115,15 @@ public class C : MonoBehaviour
             _bounds.size.x / _xDensity,
             _bounds.size.y / _yDensity,
             _bounds.size.z / _zDensity);
-        // var voxelRoot = new GameObject("Voxel Root");
-        // var rootTransform = voxelRoot.transform;
         var rootTransform = transform;
         var worldCentre = _bounds.min + gridCubeSize / 2;
+
+        float ground_height = 0;
+
+        Vector3 c_star = find_base(GetComponent<MeshFilter>().mesh);
+        Vector3 projection = (c0 - c_star);
+        projection.y = ground_height;
+
         for (int x = 0; x < _xDensity; x++)
         {
             for (int y = 0; y < _yDensity; y++)
@@ -48,117 +132,122 @@ public class C : MonoBehaviour
                 {
                     if (_voxeliser.VoxelMap[x][y][z])
                     {
-                        var go = Instantiate(_voxelModel, new Vector3(
+                        var voxel = Instantiate(_voxelModel, new Vector3(
                             x * gridCubeSize.x,
                             y * gridCubeSize.y,
                             z * gridCubeSize.z) + worldCentre, Quaternion.identity) as GameObject;
-                        go.transform.localScale = gridCubeSize;
-                        go.transform.SetParent(rootTransform, true);
+                        voxel.transform.localScale = gridCubeSize;
+                        voxel.transform.SetParent(rootTransform, true);
+
+                        // double voxel_size = 1;
+
+                        // depends whether origin of object is at center or at corner
+                        // Vector3 centroid = child.position + voxel_size * new Vector3(1, 1, 1);
+                        Vector3 centroid = voxel.transform.position;
+                        float d = Vector3.Dot((centroid - c_star), projection) - ((centroid - c_star).y * projection.y);
+                        voxel.gameObject.GetComponent<d>().dist = d;
+
+                        Renderer voxel_rend = voxel.GetComponent<Renderer>();
+                        // voxel_rend.material = new Material(Shader.Find("Specular"));
+
+                        if (d > 0) {
+                            float sigmoid_d = 1 / (1 + Mathf.Pow(2.71f, d)); 
+                            voxel_rend.material.color = new Color(1 - d, d, 0);
+                        } else {
+                            voxel_rend.material.color = new Color(1, 1, 1);
+                        }
                     }
                 }
             }
         }
 
-        List<GameObject> sorted_voxels = sorted(rb.centerOfMass, plane.transform.position.y);  
+        Renderer rend = GetComponent<Renderer>();
+        rend.material = material;
 
-        find_base(GetComponent<MeshFilter>().mesh, plane.transform.position.y);
+        // // List<GameObject> sorted_voxels = sorted(rb.centerOfMass, plane.transform.position.y);  
 
-        int n = sorted_voxels.Count;
+        // find_base(GetComponent<MeshFilter>().mesh, plane.transform.position.y);
 
-        // Delete max_d min_d later not used, 
-        //float max_d = -100;
-        //float min_d = 100;
+        // // Delete max_d min_d later not used, 
 
-        for (int i = 0; i < n; i++) {
-            GameObject voxel = sorted_voxels[i];
-            Renderer rend = voxel.GetComponent<Renderer> ();
-            rend.material = new Material(Shader.Find("Specular"));
+        // for (int i = 0; i < n; i++) {
+        //     GameObject voxel = sorted_voxels[i];
+        //     Renderer voxel_rend = voxel.GetComponent<Renderer> ();
+        //     voxel_rend.material = new Material(Shader.Find("Specular"));
 
-            float d = voxel.GetComponent<d>().dist;
-            if (d > 0) {
-                float sigmoid_d = 1 / (1 + Mathf.Pow(2.71f, d)); 
-                rend.material.color = new Color(1 - d, d, 0);
-            } else {
-                rend.material.color = new Color(1, 1, 1);
-            }
-            // float d = 1 / (1 + Mathf.Pow(2.71f, voxel.GetComponent<d>().dist));
-            // if (voxel.GetComponent<d>().dist > max_d){
-            //     max_d = voxel.GetComponent<d>().dist;
-            // }
-            // if (voxel.GetComponent<d>().dist < min_d){
-            //     min_d = voxel.GetComponent<d>().dist;
-            // }
-            // rend.material.color =  (float) i/ (float) n * (new Color(0, 1, 0));
-            // print(rend.material.color);
-        }
-        // print(max_d);
-        // print(min_d);
-
-    }
+        //     float d = voxel.GetComponent<d>().dist;
+        //     if (d > 0) {
+        //         float sigmoid_d = 1 / (1 + Mathf.Pow(2.71f, d)); 
+        //         voxel_rend.material.color = new Color(1 - d, d, 0);
+        //     } else {
+        //         voxel_rend.material.color = new Color(1, 1, 1);
+        //     }
+        // }
+    } 
 
     void Update()
     {
+        // Bounds _bounds = GetComponent<Renderer>().bounds;
+        // print(_bounds);
+
         // we need a button for this
-        if (Input.GetMouseButtonDown(1))
-        {
-            // Rigidbody rb = GetComponent<Rigidbody>();
-            // GameObject Voxel_Root = GameObject.Find("Voxel Root");
-            // Transform transform = Voxel_Root.GetComponent<Transform>();
+        // if (Input.GetMouseButtonDown(1))
+        // {
+        //     // Rigidbody rb = GetComponent<Rigidbody>();
+        //     // GameObject Voxel_Root = GameObject.Find("Voxel Root");
+        //     // Transform transform = Voxel_Root.GetComponent<Transform>();
 
-            // // need 2 for loops and a to_be_deleted list because if you delete while iterating it skips items;
+        //     // // need 2 for loops and a to_be_deleted list because if you delete while iterating it skips items;
             
-            List<Transform> to_be_deleted = new List<Transform>();
-            // print(transform.childCount);
-            foreach (Transform child in transform)
-            {
-                if (child.gameObject.GetComponent<d>().dist < 0)
-                {
-                    to_be_deleted.Add(child);
-                    //child.gameObject.SetActive(false);
-                }
-            }
+        //     List<Transform> to_be_deleted = new List<Transform>();
+        //     // print(transform.childCount);
+        //     foreach (Transform child in transform)
+        //     {
+        //         if (child.gameObject.GetComponent<d>().dist < 0)
+        //         {
+        //             to_be_deleted.Add(child);
+        //             //child.gameObject.SetActive(false);
+        //         }
+        //     }
 
-            // print(to_be_deleted.Count);
-            foreach(Transform child in to_be_deleted)
-            {
-                child.parent = null;
-                Destroy(child.gameObject);
-                // child.parent = null;
-                // child.gameObject.SetActive(false);
-            }
-            // print(transform.childCount);
+        //     // print(to_be_deleted.Count);
+        //     foreach(Transform child in to_be_deleted)
+        //     {
+        //         child.parent = null;
+        //         Destroy(child.gameObject);
+        //         // child.parent = null;
+        //         // child.gameObject.SetActive(false);
+        //     }
+        //     // print(transform.childCount);
 
-            // transform.parent = Voxel_Root.transform;
-            // combineMeshes();
-            // Voxel_Root.AddComponent<MeshCollider>();
-            // Voxel_Root.GetComponent<MeshCollider>().convex = true;
-            // Voxel_Root.AddComponent<Rigidbody>();
-            // Voxel_Root.GetComponent<Rigidbody>().useGravity = true;
+        //     // transform.parent = Voxel_Root.transform;
+        //     // combineMeshes();
+        //     // Voxel_Root.AddComponent<MeshCollider>();
+        //     // Voxel_Root.GetComponent<MeshCollider>().convex = true;
+        //     // Voxel_Root.AddComponent<Rigidbody>();
+        //     // Voxel_Root.GetComponent<Rigidbody>().useGravity = true;
 
-            Vector4 temp = getComOfChildren();
-            print(CoM(GetComponent<MeshFilter>().mesh));
-            print(temp);
-            Vector3 Voxels_c = new Vector3(temp[0], temp[1], temp[2]);
-            float Voxels_mass = temp[3];
+        //     Vector4 temp = getComOfChildren();
+        //     print(CoM(GetComponent<MeshFilter>().mesh));
+        //     print(temp);
+        //     Vector3 Voxels_c = new Vector3(temp[0], temp[1], temp[2]);
+        //     float Voxels_mass = temp[3];
 
-            Rigidbody rb = GetComponent<Rigidbody>();
-            Vector3 c = rb.centerOfMass;
+        //     Rigidbody rb = GetComponent<Rigidbody>();
+        //     Vector3 c = rb.centerOfMass;
 
-            rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
-            print(rb.centerOfMass);
-            print((mass * c - Voxels_mass * Voxels_c));
-            print((mass - Voxels_mass));
-            GameObject test = GameObject.Instantiate(GameObject.Find("Sphere"));
-            test.transform.position = rb.centerOfMass;
-        }
+        //     rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
+        //     print(rb.centerOfMass);
+        //     print((mass * c - Voxels_mass * Voxels_c));
+        //     print((mass - Voxels_mass));
+        //     GameObject test = GameObject.Instantiate(GameObject.Find("Sphere"));
+        //     test.transform.position = rb.centerOfMass;
+        // }
 
     }
 
     Vector4 getComOfChildren()
     {
-        // GameObject Voxel_Root = GameObject.Find("Voxel Root");
-
-        // // transform.parent = Voxel_Root.transform;
 
         MeshFilter[] meshFilters_temp = gameObject.GetComponentsInChildren<MeshFilter>();
         MeshFilter[] meshFilters = new MeshFilter[meshFilters_temp.Length - 1];
@@ -186,19 +275,8 @@ public class C : MonoBehaviour
 
         m.CombineMeshes(combine);
 
-        GameObject Voxel_Root = GameObject.Find("Voxel_Root");
-        Voxel_Root.GetComponent<MeshFilter>().mesh = m;
-        Renderer rend = Voxel_Root.GetComponent<Renderer>();
-        rend.material = new Material(Shader.Find("Specular"));
-
-
-        // Vector4 Voxels_c = new Vector4();
         Vector4 Voxels_c = CoM(m);
         return Voxels_c;
-        // rend.material = material;
-        //Voxel_Root.gameObject.SetActive(true);
-
-        //Voxel_Root.transform.parent = transform;
     }
 
     Vector4 CoM(Mesh mesh)
@@ -229,11 +307,14 @@ public class C : MonoBehaviour
 
             g = Vector3.Scale(a, a) + Vector3.Scale(a, b) + Vector3.Scale(b, b) + Vector3.Scale(b, c) + Vector3.Scale(c, c) + Vector3.Scale(c, a);
 
-            //the Centeroid of a tetrahedron is the average of its 4 points,
+            //the Centroid of a tetrahedron is the average of its 4 points,
             //We assume the origin is at 0
-            float mass = Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c)) / 18.0f;
-            centerOfMass += Vector3.Scale(Vector3.Cross(b - a, c - a), g) / 24.0f;
-            massTotal += mass;
+
+            float density = 1;
+            // float mass = Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c)) / 18.0f;
+            float mass = Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c)) / 6.0f;
+            centerOfMass += density * Vector3.Scale(Vector3.Cross(b - a, c - a), g) / 24.0f;
+            massTotal += density * mass;
         }
         // print(centerOfMass);
         centerOfMass /= massTotal;
@@ -247,27 +328,16 @@ public class C : MonoBehaviour
         return new Vector4(centerOfMass.x, centerOfMass.y, centerOfMass.z, massTotal);
     }
     List<GameObject> sorted(Vector3 c0, float ground_height){
-        // Vector3 c_star = new Vector3(0, 0, 0);
-        Vector3 c_star = find_base(GetComponent<MeshFilter>().mesh, ground_height);
-        // print(c_star);
-
-        // GameObject Voxel_Root = GameObject.Find("Voxel Root");
-        // Transform transform = Voxel_Root.GetComponent<Transform>();
-        
-        double voxel_size = 1;
-
+        Vector3 c_star = find_base(GetComponent<MeshFilter>().mesh);
+        // double voxel_size = 1;
         Vector3 projection = (c0 - c_star);
         projection.y = ground_height;
-
         List<GameObject> voxel_list = new List<GameObject>();
-
         foreach (Transform child in transform) {
-            
             // depends whether origin of object is at center or at corner
             // Vector3 centroid = child.position + voxel_size * new Vector3(1, 1, 1);
             Vector3 centroid = child.position;
             child.gameObject.GetComponent<d>().dist = Vector3.Dot((centroid - c_star), projection) - ((centroid - c_star).y * projection.y);
-            // print(Vector3.Dot((centroid - c_star), projection));
             voxel_list.Add(child.gameObject);
         }
         voxel_list.Sort(delegate(GameObject a, GameObject b) {
@@ -276,8 +346,7 @@ public class C : MonoBehaviour
         return voxel_list;
     }
 
-    Vector3 find_base(Mesh m, float ground_height){
-        // print(ground_height);
+    Vector3 find_base(Mesh m){
         Vector3 center = new Vector3();
         int k = 0;
         Vector3[] vertices = m.vertices;
@@ -314,5 +383,71 @@ public class C : MonoBehaviour
         // print(center);
         return center;
     }
+    
+    public void ChangeMesh(){
+        int index = GameObject.Find("Dropdown").GetComponent<Dropdown>().value;
 
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+
+        Mesh mesh;
+        // mesh = meshes[index];
+
+
+        float quality = 0.1f;
+        var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
+        meshSimplifier.Initialize(meshes[index]);
+        meshSimplifier.SimplifyMesh(quality);
+        mesh = meshSimplifier.ToMesh();
+
+        mesh.RecalculateBounds();
+        meshFilter.mesh = mesh;
+
+        Renderer rend = GetComponent<Renderer>();
+        rend.material = solid_material;
+        
+        List<Transform> to_be_deleted = new List<Transform>();
+        foreach (Transform child in transform)
+        {
+            to_be_deleted.Add(child);
+        }
+
+        foreach(Transform child in to_be_deleted)
+        {
+            Destroy(child.gameObject);
+        }
+           
+        transform.position = starting;
+
+        if (rotations.ContainsKey(index)){
+            transform.localRotation = Quaternion.Euler(rotations[index].x, rotations[index].y, rotations[index].z);
+        } else {
+            transform.localRotation = Quaternion.identity;
+        }
+        GetComponent<Rigidbody>().useGravity = false;
+        GetComponent<Rigidbody>().velocity = Vector3.zero;
+        GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+        GetComponent<MeshCollider>().sharedMesh = mesh;
+
+        float min_height = 100;
+        Vector3 lowest = new Vector3();
+        for (int i = 0; i < mesh.vertices.Length; i++)
+        {
+            Vector3 v = mesh.vertices[i];
+            if (v.y < min_height)
+            {
+                min_height = v.y;
+                lowest = v;
+            }
+        }
+
+        // plane.transform.position = lowest + (-0.5f) * Vector3.up;
+    }
+    void OnDrawGizmosSelected() {
+        Gizmos.color = Color.black;
+        // Gizmos.DrawWireCube(GetComponent<Renderer>().bounds.center, GetComponent<Renderer>().bounds.size);
+        // Gizmos.DrawWireSphere(GetComponent<Rigidbody>().centerOfMass, 1f);
+        Gizmos.DrawLine(GetComponent<Rigidbody>().centerOfMass - 5 * Vector3.up , GetComponent<Rigidbody>().centerOfMass + 5 * Vector3.up);
+        // Gizmos.DrawIcon(GetComponent<Rigidbody>().centerOfMass, "Light Gizmo.tiff", true);
+        // Gizmos.DrawLine(voxel_c - 5 * Vector3.up , voxel_c + 5 * Vector3.up);
+    }
 }
