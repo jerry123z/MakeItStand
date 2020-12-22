@@ -71,12 +71,11 @@ public class C : MonoBehaviour
         print(rb.centerOfMass);
         print(mass);
 
-        // rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
+        rb.centerOfMass = (mass * c - Voxels_mass * Voxels_c) / (mass - Voxels_mass);
         // rb.centerOfMass = Vector3.zero;
         // rb.centerOfMass = new Vector3(0.3f, -0.6f, -0.1f);
-        rb.centerOfMass = lowest_vertice + 0.25f * (new Vector3(-1, 1, -1));
+        // rb.centerOfMass = lowest_vertice + 0.25f * (new Vector3(0, 1, 0));
         print(rb.centerOfMass);
-
     }
 
 
@@ -90,9 +89,9 @@ public class C : MonoBehaviour
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.centerOfMass = c0;
 
-        int _xDensity = 16;
-        int _yDensity = 16;
-        int _zDensity = 16;
+        int _xDensity = 32;
+        int _yDensity = 32;
+        int _zDensity = 32;
         // int _xDensity = 32;
         // int _yDensity = 32;
         // int _zDensity = 32;
